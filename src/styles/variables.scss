@@ -1,0 +1,28 @@
+// ===== aicyi-platform 主题变量（蓝白标准后台风）=====
+
+// 色彩
+$bg-page: #F0F2F5;            // 页面浅灰底
+$bg-card: #FFFFFF;            // 卡片纯白
+$ink: #1F2937;                // 主文字
+$ink-soft: #4B5563;           // 次级文字
+$ink-muted: #9CA3AF;          // 弱化文字
+$ink-line: #E5E7EB;           // 细分割线
+$primary: #3B82F6;            // 主色蓝（登录按钮）
+$primary-deep: #2563EB;       // 主色深蓝
+$primary-light: #DBEAFE;      // 主色浅底
+$header-dark: #2C3E50;        // 登录卡头部深蓝灰
+$gradient-start: #6366F1;     // 背景渐变起点（蓝）
+$gradient-end: #8B5CF6;       // 背景渐变终点（紫）
+
+// Element Plus 主题覆盖
+$--color-primary: #{$primary};
+$--color-primary-light-3: #{$primary-light};
+$--color-primary-dark-2: #{$primary-deep};
+$--border-color-base: #{$ink-line};
+$--text-color-primary: #{$ink};
+$--text-color-regular: #{$ink-soft};
+$--bg-color: #{$bg-page};
+$--fill-color-blank: #{$bg-card};
+
+// 字体
+$font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;

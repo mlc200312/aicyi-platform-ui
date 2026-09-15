@@ -1,0 +1,68 @@
+@use './variables.scss' as *;
+
+// ===== 全局重置 =====
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: $font-body;
+  background-color: $bg-page;
+  color: $ink;
+  -webkit-font-smoothing: antialiased;
+}
+
+// ===== Element Plus 主色覆盖 =====
+.el-button--primary {
+  --el-button-bg-color: #{$primary};
+  --el-button-border-color: #{$primary};
+  --el-button-hover-bg-color: #{$primary-deep};
+  --el-button-hover-border-color: #{$primary-deep};
+  --el-button-active-bg-color: #{$primary-deep};
+}
+
+.el-menu {
+  --el-menu-active-color: #{$primary};
+  --el-menu-hover-bg-color: #{$primary-light};
+  border-right: none !important;
+}
+
+.el-menu-item.is-active {
+  background-color: $primary-light !important;
+  color: $primary !important;
+  font-weight: 600;
+}
+
+.el-table {
+  --el-table-header-bg-color: #F9FAFB;
+  --el-table-border-color: $ink-line;
+  th.el-table__cell {
+    font-weight: 600;
+    color: $ink;
+  }
+}
+
+.el-card {
+  --el-card-border-color: #{$ink-line};
+  border-radius: 8px;
+}
+
+// 滚动条
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+// ===== 弹窗垂直居中（仅改 align-items，不影响 overlay 显隐） =====
+.el-overlay {
+  align-items: center;
+}
+.center-confirm-dialog {
+  margin: 0 !important;
+}
