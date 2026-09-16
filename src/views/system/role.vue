@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { confirm } from '@/utils/confirm'
 import { listRoles, addRole, editRole, deleteRole, changeRoleStatus, assignRoleMenus, getRoleMenuIds } from '@/api/role'
@@ -154,6 +154,10 @@ async function openAssignMenu(row: any) {
   menuTree.value = (await listMenus()) as any
   checkedMenuIds.value = (await getRoleMenuIds(row.id)) as any
   menuDialogVisible.value = true
+  // default-checked-keys 仅树首次初始化生效，切换角色时需手动 setCheckedKeys 清空并重置勾选
+  await nextTick()
+  treeRef.value?.setCheckedKeys([])
+  treeRef.value?.setCheckedKeys(checkedMenuIds.value)
 }
 async function handleAssignMenu() {
   const keys = treeRef.value.getCheckedKeys()

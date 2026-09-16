@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { getAccessToken } from '@/utils/token'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -65,7 +66,7 @@ const router = createRouter({
 
 // 路由守卫：未登录拦截
 router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem('accessToken')
+  const token = getAccessToken()
   if (to.meta.requiresAuth === false) {
     next()
   } else if (!token) {

@@ -19,3 +19,7 @@ export function changePassword(oldPassword: string, newPassword: string) {
 export function getUserInfo() {
   return request({ url: '/api/system/profile/info', method: 'get' })
 }
+
+export function updateProfile(data: { nickname: string; mobile: string; email: string }) {
+  return request({ url: '/api/system/profile/update', method: 'put', data })
+}

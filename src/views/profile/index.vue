@@ -47,7 +47,7 @@
 import { reactive, computed, onMounted, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { changePassword } from '@/api/auth'
+import { changePassword, updateProfile } from '@/api/auth'
 
 const userStore = useUserStore()
 const userInfo = computed(() => userStore.userInfo)
@@ -79,7 +79,9 @@ onMounted(async () => {
   Object.assign(form, { nickname: info?.nickname, mobile: info?.mobile, email: info?.email })
 })
 
-function handleSave() {
+async function handleSave() {
+  await updateProfile({ nickname: form.nickname, mobile: form.mobile, email: form.email })
+  await userStore.fetchUserInfo()
   ElMessage.success('Success')
 }
 async function handleChangePwd() {

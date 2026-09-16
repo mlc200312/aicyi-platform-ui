@@ -22,7 +22,7 @@
           </el-form-item>
           <div class="form-options">
             <el-checkbox v-model="form.remember">记住我</el-checkbox>
-            <a class="forgot-link" href="javascript:;">忘记密码？</a>
+            <a class="forgot-link" href="javascript:;" @click="showForgotDialog = true">忘记密码？</a>
           </div>
           <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="handleLogin">
             登 录
@@ -36,12 +36,9 @@
       </div>
     </div>
 
-    <!-- 初始密码修改弹窗 -->
+    <!-- 初始密码修改弹窗（无需输入旧密码，旧密码取登录时输入的密码） -->
     <el-dialog v-model="showPwdDialog" title="修改初始密码" width="420px" :close-on-click-modal="false">
       <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="90px">
-        <el-form-item label="旧密码" prop="oldPassword">
-          <el-input v-model="pwdForm.oldPassword" type="password" show-password />
-        </el-form-item>
         <el-form-item label="新密码" prop="newPassword">
           <el-input v-model="pwdForm.newPassword" type="password" show-password />
         </el-form-item>
@@ -53,6 +50,28 @@
         <el-button type="primary" @click="handleChangePwd">确认修改</el-button>
       </template>
     </el-dialog>
+
+    <!-- 忘记密码弹窗 -->
+    <el-dialog v-model="showForgotDialog" title="忘记密码" width="400px" :close-on-click-modal="false">
+      <div class="forgot-content">
+        <el-alert type="info" :closable="false" style="margin-bottom: 16px">
+          为保障账号安全，本系统不支持自助重置密码。请联系系统管理员为您重置密码。
+        </el-alert>
+        <el-form label-width="70px">
+          <el-form-item label="用户名">
+            <el-input v-model="forgotForm.username" placeholder="请输入您的用户名" />
+          </el-form-item>
+        </el-form>
+        <div class="forgot-tip" v-if="forgotSubmitted">
+          <el-icon color="#3B82F6"><CircleCheckFilled /></el-icon>
+          <span>已记录，请联系管理员（admin）重置密码</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showForgotDialog = false">关闭</el-button>
+        <el-button type="primary" @click="handleForgotSubmit">确认</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -60,7 +79,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { User, Lock, Platform } from '@element-plus/icons-vue'
+import { User, Lock, Platform, CircleCheckFilled } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { changePassword } from '@/api/auth'
 
@@ -81,12 +100,13 @@ const rules: FormRules = {
 
 const showPwdDialog = ref(false)
 const pwdFormRef = ref<FormInstance>()
-const pwdForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
+
+// 忘记密码
+const showForgotDialog = ref(false)
+const forgotForm = reactive({ username: '' })
+const forgotSubmitted = ref(false)
+const pwdForm = reactive({ newPassword: '', confirmPassword: '' })
 const pwdRules: FormRules = {
-  oldPassword: [
-    { required: true, message: '请输入旧密码', trigger: 'blur' },
-    { min: 6, max: 32, message: '密码长度需为 6-32 位', trigger: 'blur' },
-  ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
     { min: 6, max: 32, message: '密码长度需为 6-32 位', trigger: 'blur' },
@@ -109,7 +129,7 @@ async function handleLogin() {
     if (!valid) return
     loading.value = true
     try {
-      const res: any = await userStore.login(form.username, form.password)
+      const res: any = await userStore.login(form.username, form.password, form.remember)
       if (res.needChangePassword) {
         showPwdDialog.value = true
       } else {
@@ -126,12 +146,21 @@ async function handleChangePwd() {
   if (!pwdFormRef.value) return
   await pwdFormRef.value.validate(async (valid) => {
     if (!valid) return
-    await changePassword(pwdForm.oldPassword, pwdForm.newPassword)
+    // 初始密码修改：旧密码取登录时输入的密码（登录已验证通过）
+    await changePassword(form.password, pwdForm.newPassword)
     ElMessage.success('Success')
     showPwdDialog.value = false
     userStore.logout()
     router.push('/login')
   })
+}
+
+function handleForgotSubmit() {
+  if (!forgotForm.username.trim()) {
+    ElMessage.warning('请输入用户名')
+    return
+  }
+  forgotSubmitted.value = true
 }
 </script>
 
@@ -221,5 +250,19 @@ async function handleChangePwd() {
   font-size: 12px;
   color: $ink-muted;
   border-top: 1px solid $ink-line;
+}
+
+.forgot-content {
+  .forgot-tip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #eff6ff;
+    border-radius: 6px;
+    font-size: 13px;
+    color: $primary-deep;
+  }
 }
 </style>

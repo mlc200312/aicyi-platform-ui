@@ -1,16 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { login as loginApi, logout as logoutApi, getUserInfo } from '@/api/auth'
+import { getAccessToken, setTokenMode, setTokens, clearTokens } from '@/utils/token'
 
 export const useUserStore = defineStore('user', () => {
-  const token = ref(localStorage.getItem('accessToken') || '')
+  const token = ref(getAccessToken() || '')
   const userInfo = ref<any>(null)
 
-  async function login(username: string, password: string) {
+  async function login(username: string, password: string, remember = false) {
+    setTokenMode(remember)
     const res: any = await loginApi(username, password)
     token.value = res.accessToken
-    localStorage.setItem('accessToken', res.accessToken)
-    localStorage.setItem('refreshToken', res.refreshToken)
+    setTokens(res.accessToken, res.refreshToken)
     if (res.needChangePassword) {
       return { needChangePassword: true }
     }
@@ -25,13 +26,12 @@ export const useUserStore = defineStore('user', () => {
 
   async function logout() {
     try {
-      const refreshToken = localStorage.getItem('refreshToken')
+      const refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
       if (refreshToken) await logoutApi(refreshToken)
     } finally {
       token.value = ''
       userInfo.value = null
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
+      clearTokens()
     }
   }
 

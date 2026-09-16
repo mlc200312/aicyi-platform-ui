@@ -1,6 +1,8 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import router from '@/router'
 import { useErrorStore } from '@/stores/error'
+import { useLoadingStore } from '@/stores/loading'
+import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '@/utils/token'
 
 const service: AxiosInstance = axios.create({
   baseURL: '',
@@ -14,7 +16,7 @@ let pendingQueue: Array<(token: string) => void> = []
 
 /** 调用后端刷新令牌，成功后更新本地存储并返回新 accessToken */
 function doRefresh(): Promise<string> {
-  const refreshToken = localStorage.getItem('refreshToken')
+  const refreshToken = getRefreshToken()
   if (!refreshToken) {
     return Promise.reject(new Error('no refresh token'))
   }
@@ -27,8 +29,7 @@ function doRefresh(): Promise<string> {
         throw new Error(body.message || 'refresh failed')
       }
       const { accessToken, refreshToken: newRefreshToken } = body.data
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', newRefreshToken)
+      setTokens(accessToken, newRefreshToken)
       return accessToken
     })
 }
@@ -36,36 +37,40 @@ function doRefresh(): Promise<string> {
 /** 刷新失败兜底：清空令牌并跳转登录 */
 function handleRefreshFail() {
   pendingQueue = []
-  localStorage.removeItem('accessToken')
-  localStorage.removeItem('refreshToken')
+  clearTokens()
   const errorStore = useErrorStore()
   errorStore.showError('登录已过期，请重新登录')
   router.push('/login')
 }
 
-// 请求拦截：携带 Token
+// 请求拦截：携带 Token + 全局 loading
 service.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken')
+    useLoadingStore().start()
+    const token = getAccessToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    useLoadingStore().done()
+    return Promise.reject(error)
+  },
 )
 
-// 响应拦截：统一处理业务码
+// 响应拦截：统一处理业务码 + 关闭全局 loading
 service.interceptors.response.use(
   (response) => {
     const res = response.data
     const errorStore = useErrorStore()
+    const loadingStore = useLoadingStore()
     // 后端统一返回 { code, data, message }
     if (res.code !== undefined && res.code !== 0) {
       // 40101 未登录 → 直接跳登录页
       if (res.code === 40101) {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
+        loadingStore.done()
+        clearTokens()
         errorStore.showError(res.message || '请先登录')
         router.push('/login')
         return Promise.reject(new Error(res.message || '未登录'))
@@ -73,6 +78,7 @@ service.interceptors.response.use(
 
       // 40102 Token 过期 → 自动刷新令牌并重试原请求，不跳登录页
       if (res.code === 40102) {
+        loadingStore.done() // 当前请求已响应，重试请求会重新 start
         const config = response.config as AxiosRequestConfig
         if (!isRefreshing) {
           isRefreshing = true
@@ -101,12 +107,15 @@ service.interceptors.response.use(
       }
 
       // 其他业务错误：顶部 banner 提示
+      loadingStore.done()
       errorStore.showError(res.message || '请求失败')
       return Promise.reject(new Error(res.message || '请求失败'))
     }
+    loadingStore.done()
     return res
   },
   (error) => {
+    useLoadingStore().done()
     const errorStore = useErrorStore()
     errorStore.showError(error.message || '网络异常，请稍后重试')
     return Promise.reject(error)

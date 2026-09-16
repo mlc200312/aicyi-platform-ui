@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { confirm } from '@/utils/confirm'
 import { listUsers } from '@/api/user'
@@ -43,6 +43,7 @@ const userList = ref<any[]>([])
 const selectedUserId = ref<number | null>(null)
 const permTree = ref<any[]>([])
 const checkedPermIds = ref<number[]>([])
+const originalPerms = ref<string[]>([]) // 加载时该用户已有的权限，用于计算移除项
 const treeRef = ref()
 
 async function loadUsers() {
@@ -58,7 +59,12 @@ async function loadPerms() {
     permTree.value = await listMenus()
     // 根据有效权限标识集合，匹配菜单 ID 进行勾选
     const perms: string[] = data.permissions || []
+    originalPerms.value = [...perms] // 保存原始权限，保存时用于差集计算
     checkedPermIds.value = collectCheckedIds(permTree.value, perms)
+    // default-checked-keys 仅树首次初始化生效，切换用户时需手动 setCheckedKeys 重置勾选
+    await nextTick()
+    treeRef.value?.setCheckedKeys([])
+    treeRef.value?.setCheckedKeys(checkedPermIds.value)
   } finally { loading.value = false }
 }
 
@@ -78,9 +84,16 @@ function collectCheckedIds(nodes: any[], codes: string[]): number[] {
 }
 async function handleAssign() {
   if (!selectedUserId.value) { ElMessage.warning('请先选择用户'); return }
-  const keys = treeRef.value.getCheckedKeys()
-  await assignPermissions(selectedUserId.value, keys)
+  // 收集勾选节点的 permCode（权限标识），过滤掉目录/菜单等无 permCode 的节点
+  const checkedNodes = treeRef.value.getCheckedNodes()
+  const addCodes = checkedNodes
+    .map((n: any) => n.permCode)
+    .filter((code: string) => !!code)
+  // 移除项 = 原始权限中已被取消勾选的部分
+  const removeCodes = originalPerms.value.filter((c) => !addCodes.includes(c))
+  await assignPermissions(selectedUserId.value, addCodes, removeCodes)
   ElMessage.success('Success')
+  loadPerms()
 }
 async function handleReset() {
   if (!selectedUserId.value) { ElMessage.warning('请先选择用户'); return }
