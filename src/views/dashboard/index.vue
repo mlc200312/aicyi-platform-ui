@@ -39,9 +39,11 @@
           </template>
           <ul class="log-list">
             <li v-for="(log, i) in logs" :key="i">
+              <span class="log-dot" :class="{ fail: log.success === 0 }" />
               <span class="log-text">{{ log.text }}</span>
               <span class="log-time">{{ log.time }}</span>
             </li>
+            <li v-if="logs.length === 0" class="log-empty">暂无操作日志</li>
           </ul>
         </el-card>
       </el-col>
@@ -104,6 +106,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { listUsers } from '@/api/user'
+import { listOperLogs } from '@/api/operLog'
 
 const stats = [
   { label: '总用户数', value: '1,286', icon: 'User', color: '#3B82F6' },
@@ -122,13 +125,34 @@ const chartData = [
   { day: '周日', height: 60, color: '#3B82F6' },
 ]
 
-const logs = [
-  { text: 'Admin 登录系统', time: '2分钟前' },
-  { text: '张三 修改了用户李四的信息', time: '15分钟前' },
-  { text: '系统 自动创建了角色"审计员"', time: '1小时前' },
-  { text: 'Admin 分配了菜单权限给管理员角色', time: '2小时前' },
-  { text: '李四 重置了登录密码', time: '3小时前' },
-]
+const logs = ref<any[]>([])
+
+async function loadLogs() {
+  try {
+    const res: any = await listOperLogs({ page: 1, size: 5 })
+    logs.value = (res.list || res.records || []).map((item: any) => ({
+      text: `${item.username || '系统'} ${item.operDesc || item.operModule || ''}`,
+      time: formatTime(item.operateTime),
+      success: item.success,
+    }))
+  } catch {
+    logs.value = []
+  }
+}
+
+/** 操作时间格式化：今天的显示"刚刚/x分钟前"，更早的显示日期 */
+function formatTime(timeStr: string): string {
+  if (!timeStr) return ''
+  const t = new Date(timeStr.replace(/-/g, '/'))
+  if (isNaN(t.getTime())) return timeStr
+  const diff = Date.now() - t.getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return '刚刚'
+  if (min < 60) return `${min}分钟前`
+  const hour = Math.floor(min / 60)
+  if (hour < 24) return `${hour}小时前`
+  return timeStr.slice(0, 16)
+}
 
 // ===== 用户列表（真实接口） =====
 const userList = ref<any[]>([])
@@ -162,6 +186,7 @@ function handlePageChange(page: number) {
 
 onMounted(() => {
   loadUsers()
+  loadLogs()
 })
 </script>
 
@@ -249,12 +274,26 @@ onMounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       padding: 12px 0;
       border-bottom: 1px solid $ink-line;
       font-size: 13px;
       &:last-child { border-bottom: none; }
-      .log-text { color: $ink; }
-      .log-time { color: $ink-muted; font-size: 12px; }
+      .log-dot {
+        flex-shrink: 0;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22c55e;
+        &.fail { background: #ef4444; }
+      }
+      .log-text { color: $ink; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .log-time { color: $ink-muted; font-size: 12px; flex-shrink: 0; }
+    }
+    .log-empty {
+      justify-content: center;
+      color: $ink-muted;
+      padding: 24px 0;
     }
   }
 
