@@ -55,6 +55,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/log/index.vue'),
         meta: { title: '日志管理', icon: 'Document' },
       },
+      {
+        path: 'template',
+        name: 'Template',
+        component: () => import('@/views/template/index.vue'),
+        meta: { title: '模板管理', icon: 'Document' },
+      },
     ],
   },
 ]
