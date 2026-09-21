@@ -63,8 +63,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="190" fixed="right">
           <template #default="{ row }">
+            <el-button link type="success" @click="openTestSend(row)">测试</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -168,6 +169,8 @@
         <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+    <!-- 测试发送弹窗 -->
+    <TestSendDialog v-model="testSendVisible" :template="testSendTemplate" />
   </div>
 </template>
 
@@ -178,6 +181,7 @@ import {
   listMessageTemplates, addMessageTemplate, editMessageTemplate,
   deleteMessageTemplate, changeTemplateStatus,
 } from '@/api/messageTemplate'
+import TestSendDialog from './TestSendDialog.vue'
 
 const messageTypeOptions = [
   { label: '邮件 mail', value: 'mail' },
@@ -190,8 +194,11 @@ const messageTypeOptions = [
 function messageTypeLabel(t: string): string {
   return messageTypeOptions.find(o => o.value === t)?.label?.split(' ')[0] || t
 }
-function messageTypeTag(t: string): string {
-  return { mail: 'primary', sms: 'success', push: 'warning', mq: 'info', wechat_mp: 'danger' }[t] || 'info'
+const tagTypeMap: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
+  mail: 'primary', sms: 'success', push: 'warning', mq: 'info', wechat_mp: 'danger',
+}
+function messageTypeTag(t: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' {
+  return tagTypeMap[t] || 'info'
 }
 
 const loading = ref(false)
@@ -332,6 +339,15 @@ async function handleSubmit() {
       submitting.value = false
     }
   })
+}
+
+// ===== 测试发送 =====
+const testSendVisible = ref(false)
+const testSendTemplate = ref<any | null>(null)
+
+function openTestSend(row: any) {
+  testSendTemplate.value = row
+  testSendVisible.value = true
 }
 
 // ===== 删除 =====

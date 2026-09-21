@@ -128,8 +128,10 @@ const query = reactive({
 
 const operTypeOptions = ['LOGIN', 'LOGOUT', 'PASSWORD', 'PERM', 'REFRESH', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'QUERY']
 
-function operTypeTag(type: string): string {
-  const map: Record<string, string> = {
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function operTypeTag(type: string): TagType {
+  const map: Record<string, TagType> = {
     LOGIN: 'success', LOGOUT: 'info', PASSWORD: 'warning',
     PERM: 'primary', REFRESH: 'info', CREATE: 'success',
     UPDATE: 'warning', DELETE: 'danger', EXPORT: 'primary', QUERY: 'info',
@@ -137,8 +139,8 @@ function operTypeTag(type: string): string {
   return map[type] || 'info'
 }
 
-function methodTag(method: string): string {
-  const map: Record<string, string> = { GET: 'info', POST: 'success', PUT: 'warning', DELETE: 'danger' }
+function methodTag(method: string): TagType {
+  const map: Record<string, TagType> = { GET: 'info', POST: 'success', PUT: 'warning', DELETE: 'danger' }
   return map[method] || 'info'
 }
 

@@ -29,3 +29,16 @@ export function deleteMessageTemplate(id: number | string) {
 export function changeTemplateStatus(id: number | string, status: number) {
   return request({ url: `/api/system/message-template/status/${id}`, method: 'put', params: { status } })
 }
+
+/** 测试发送消息（按消息类型校验接收者，渲染模板后真实发送） */
+export function testSendMessageTemplate(
+  id: number | string,
+  data: { receiver: string; params?: Record<string, string> },
+) {
+  return request({
+    url: `/api/system/message-template/test-send/${id}`,
+    method: 'post',
+    data,
+    timeout: 30000,
+  })
+}
