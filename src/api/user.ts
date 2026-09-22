@@ -19,6 +19,10 @@ export function editUser(id: number, data: any) {
 export function deleteUser(id: number) {
   return request({ url: '/api/system/user/delete', method: 'post', params: { id } })
 }
+/** 批量删除用户（admin 账号后端自动跳过），返回实际删除数量 */
+export function batchDeleteUsers(ids: number[]) {
+  return request({ url: '/api/system/user/batch-delete', method: 'post', data: { ids } })
+}
 export function changeUserStatus(id: number, status: number) {
   return request({ url: `/api/system/user/status/${id}`, method: 'put', params: { status } })
 }

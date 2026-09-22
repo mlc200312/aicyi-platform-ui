@@ -57,7 +57,9 @@
           <div class="table-actions">
             <el-button type="primary" size="small" @click="$router.push('/system/user')">+ 新增用户</el-button>
             <el-button type="success" size="small">+ 批量导入</el-button>
-            <el-button type="danger" size="small">- 批量删除</el-button>
+            <el-button type="danger" size="small" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+              - 批量删除{{ selectedIds.length ? `(${selectedIds.length})` : '' }}
+            </el-button>
           </div>
         </div>
       </template>
@@ -69,7 +71,8 @@
         </el-select>
         <el-button type="primary" style="margin-left: 12px" @click="handleSearch">搜索</el-button>
       </div>
-      <el-table :data="userList" v-loading="userLoading" style="width: 100%; margin-top: 12px">
+      <el-table :data="userList" v-loading="userLoading" style="width: 100%; margin-top: 12px" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="42" :selectable="(row: any) => row.username !== 'admin'" />
         <el-table-column prop="username" label="用户名" width="140" />
         <el-table-column prop="nickname" label="昵称" width="120" />
         <el-table-column prop="mobile" label="手机号" width="140" />
@@ -105,7 +108,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { listUsers } from '@/api/user'
+import { ElMessage } from 'element-plus'
+import { confirm } from '@/utils/confirm'
+import { listUsers, batchDeleteUsers } from '@/api/user'
 import { listOperLogs } from '@/api/operLog'
 
 const stats = [
@@ -181,6 +186,25 @@ function handleSearch() {
 
 function handlePageChange(page: number) {
   userQuery.page = page
+  loadUsers()
+}
+
+// ===== 批量删除 =====
+const selectedIds = ref<number[]>([])
+
+function handleSelectionChange(rows: any[]) {
+  selectedIds.value = rows.map((row) => row.id)
+}
+
+async function handleBatchDelete() {
+  const count = selectedIds.value.length
+  if (!count) return
+  await confirm(`确定删除选中的 ${count} 个用户？删除后不可恢复`, '批量删除')
+  const res: any = await batchDeleteUsers(selectedIds.value)
+  const deleted = Number(res.data ?? res) || 0
+  const skipped = count - deleted
+  ElMessage.success(skipped > 0 ? `已删除 ${deleted} 个用户，${skipped} 个已跳过（admin 或不存在）` : `已删除 ${deleted} 个用户`)
+  selectedIds.value = []
   loadUsers()
 }
 
