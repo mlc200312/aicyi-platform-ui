@@ -62,9 +62,14 @@ service.interceptors.request.use(
 // 响应拦截：统一处理业务码 + 关闭全局 loading
 service.interceptors.response.use(
   (response) => {
+    const loadingStore = useLoadingStore()
+    // 文件流响应（blob / arraybuffer）：非 Result 包装，直接透传给下载工具处理
+    if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
+      loadingStore.done()
+      return response
+    }
     const res = response.data
     const errorStore = useErrorStore()
-    const loadingStore = useLoadingStore()
     // 后端统一返回 { code, data, message }
     if (res.code !== undefined && res.code !== 0) {
       // 40101 未登录 → 直接跳登录页
@@ -124,6 +129,52 @@ service.interceptors.response.use(
 
 export function request<T = any>(config: AxiosRequestConfig): Promise<T> {
   return service.request(config).then((res) => res.data as T)
+}
+
+/**
+ * 文件下载：请求二进制流并触发浏览器保存，返回实际保存的文件名。
+ *
+ * 后端业务异常时仍返回 HTTP 200 + JSON 错误体（blob），
+ * 此处识别后解析 message 并抛出，避免把错误 JSON 存成文件。
+ */
+export async function download(config: AxiosRequestConfig, fallbackName = '导出文件'): Promise<string> {
+  const response = await service.request<Blob>({ ...config, responseType: 'blob' })
+  const blob = response.data
+  if (blob && typeof blob.type === 'string' && blob.type.includes('application/json')) {
+    const body = JSON.parse(await blob.text())
+    useErrorStore().showError(body.message || '下载失败')
+    throw new Error(body.message || '下载失败')
+  }
+
+  const filename = resolveFilename(response.headers?.['content-disposition'], fallbackName)
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+  return filename
+}
+
+/**
+ * 解析 Content-Disposition 文件名（RFC 5987 filename* 优先，回退 filename，兜底默认名）
+ */
+function resolveFilename(disposition: string | undefined, fallback: string): string {
+  if (!disposition) {
+    return fallback
+  }
+  const encoded = disposition.match(/filename\*=(?:UTF-8'')?([^;]+)/i)
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1].trim().replace(/^"|"$/g, ''))
+    } catch {
+      // 编码异常时回退普通 filename
+    }
+  }
+  const plain = disposition.match(/filename="?([^";]+)"?/i)
+  return plain ? plain[1] : fallback
 }
 
 export default service

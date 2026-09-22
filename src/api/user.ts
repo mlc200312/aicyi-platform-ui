@@ -1,7 +1,14 @@
-import { request } from '@/utils/request'
+import { request, download } from '@/utils/request'
 
 export function listUsers(params: any) {
   return request({ url: '/api/system/user/list', method: 'get', params })
+}
+/** 按当前查询条件导出用户列表 Excel，返回实际保存的文件名 */
+export function exportUsers(params: { username?: string; status?: number | null }) {
+  return download(
+    { url: '/api/system/user/export', method: 'post', data: params },
+    '用户列表.xlsx',
+  )
 }
 export function addUser(data: any) {
   return request({ url: '/api/system/user/add', method: 'post', data })

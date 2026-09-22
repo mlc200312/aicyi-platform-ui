@@ -22,6 +22,7 @@
     <!-- 操作栏 -->
     <div class="toolbar">
       <el-button type="primary" @click="openAdd">新增用户</el-button>
+      <el-button type="success" plain :icon="Download" :loading="exporting" @click="handleExport">导出 Excel</el-button>
     </div>
 
     <!-- 表格 -->
@@ -126,11 +127,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { Download } from '@element-plus/icons-vue'
 import { confirm } from '@/utils/confirm'
-import { listUsers, addUser, editUser, deleteUser, changeUserStatus, resetUserPassword, assignUserRoles, getUserRoles } from '@/api/user'
+import { listUsers, addUser, editUser, deleteUser, changeUserStatus, resetUserPassword, assignUserRoles, getUserRoles, exportUsers } from '@/api/user'
 import { listAllRoles } from '@/api/role'
 
 const loading = ref(false)
+const exporting = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
 const query = reactive({ page: 1, size: 10, username: '', status: null as number | null })
@@ -179,6 +182,17 @@ function resetQuery() {
   query.status = null
   query.page = 1
   loadData()
+}
+
+/** 按当前查询条件导出用户列表（仅携带筛选条件，不分页） */
+async function handleExport() {
+  exporting.value = true
+  try {
+    const filename = await exportUsers({ username: query.username || undefined, status: query.status })
+    ElMessage.success(`导出成功：${filename}`)
+  } finally {
+    exporting.value = false
+  }
 }
 
 function openAdd() {
