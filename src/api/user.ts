@@ -23,6 +23,21 @@ export function deleteUser(id: number) {
 export function batchDeleteUsers(ids: number[]) {
   return request({ url: '/api/system/user/batch-delete', method: 'post', data: { ids } })
 }
+/** 批量导入用户（Excel 上传），返回导入结果（总行数/成功数/失败数/失败明细） */
+export function importUsers(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/api/system/user/import',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+/** 下载用户导入模板（Excel），返回实际保存的文件名 */
+export function downloadImportTemplate() {
+  return download({ url: '/api/system/user/import-template', method: 'get' }, '用户导入模板.xlsx')
+}
 export function changeUserStatus(id: number, status: number) {
   return request({ url: `/api/system/user/status/${id}`, method: 'put', params: { status } })
 }

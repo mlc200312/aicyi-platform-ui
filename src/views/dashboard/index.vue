@@ -56,7 +56,7 @@
           <span class="card-title">用户管理</span>
           <div class="table-actions">
             <el-button type="primary" size="small" @click="$router.push('/system/user')">+ 新增用户</el-button>
-            <el-button type="success" size="small">+ 批量导入</el-button>
+            <el-button type="success" size="small" @click="importVisible = true">+ 批量导入</el-button>
             <el-button type="danger" size="small" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
               - 批量删除{{ selectedIds.length ? `(${selectedIds.length})` : '' }}
             </el-button>
@@ -103,6 +103,9 @@
         />
       </div>
     </el-card>
+
+    <!-- 批量导入弹窗 -->
+    <UserImportDialog v-model="importVisible" @imported="loadUsers" />
   </div>
 </template>
 
@@ -112,6 +115,7 @@ import { ElMessage } from 'element-plus'
 import { confirm } from '@/utils/confirm'
 import { listUsers, batchDeleteUsers } from '@/api/user'
 import { listOperLogs } from '@/api/operLog'
+import UserImportDialog from './UserImportDialog.vue'
 
 const stats = [
   { label: '总用户数', value: '1,286', icon: 'User', color: '#3B82F6' },
@@ -191,6 +195,9 @@ function handlePageChange(page: number) {
 
 // ===== 批量删除 =====
 const selectedIds = ref<number[]>([])
+
+// ===== 批量导入 =====
+const importVisible = ref(false)
 
 function handleSelectionChange(rows: any[]) {
   selectedIds.value = rows.map((row) => row.id)
