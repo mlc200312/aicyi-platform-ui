@@ -64,12 +64,12 @@
         </el-form>
         <div class="forgot-tip" v-if="forgotSubmitted">
           <el-icon color="#3B82F6"><CircleCheckFilled /></el-icon>
-          <span>已记录，请联系管理员（admin）重置密码</span>
+          <span>已发送业务提醒消息，请联系管理员（admin）重置密码</span>
         </div>
       </div>
       <template #footer>
         <el-button @click="showForgotDialog = false">关闭</el-button>
-        <el-button type="primary" @click="handleForgotSubmit">确认</el-button>
+        <el-button type="primary" :loading="forgotLoading" @click="handleForgotSubmit">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -81,7 +81,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { User, Lock, Platform, CircleCheckFilled } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { changePassword } from '@/api/auth'
+import { changePassword, forgotPassword } from '@/api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -105,6 +105,7 @@ const pwdFormRef = ref<FormInstance>()
 const showForgotDialog = ref(false)
 const forgotForm = reactive({ username: '' })
 const forgotSubmitted = ref(false)
+const forgotLoading = ref(false)
 const pwdForm = reactive({ newPassword: '', confirmPassword: '' })
 const pwdRules: FormRules = {
   newPassword: [
@@ -155,12 +156,19 @@ async function handleChangePwd() {
   })
 }
 
-function handleForgotSubmit() {
+async function handleForgotSubmit() {
   if (!forgotForm.username.trim()) {
     ElMessage.warning('请输入用户名')
     return
   }
-  forgotSubmitted.value = true
+  forgotLoading.value = true
+  try {
+    // 后端按用户名定位用户并发送密码找回业务提醒（站内消息）
+    await forgotPassword(forgotForm.username.trim())
+    forgotSubmitted.value = true
+  } finally {
+    forgotLoading.value = false
+  }
 }
 </script>
 

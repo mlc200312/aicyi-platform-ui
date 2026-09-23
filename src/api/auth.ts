@@ -16,6 +16,10 @@ export function changePassword(oldPassword: string, newPassword: string) {
   return request({ url: '/api/auth/change-password', method: 'post', data: { oldPassword, newPassword } })
 }
 
+export function forgotPassword(username: string) {
+  return request({ url: '/api/auth/forgot-password', method: 'post', data: { username } })
+}
+
 export function getUserInfo() {
   return request({ url: '/api/system/profile/info', method: 'get' })
 }
