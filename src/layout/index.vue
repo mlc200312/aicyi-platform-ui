@@ -46,9 +46,7 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <el-badge :value="3" :hidden="false" class="notice-badge">
-            <el-icon :size="20" class="notice-icon"><Bell /></el-icon>
-          </el-badge>
+          <NotificationBell />
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <span class="avatar">{{ userInitial }}</span>
@@ -72,15 +70,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useMenuStore } from '@/stores/menu'
+import { useNotificationStore } from '@/stores/notification'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const menuStore = useMenuStore()
+const notificationStore = useNotificationStore()
 
 const activeMenu = computed(() => route.path)
 const currentTitle = computed(() => (route.meta.title as string) || '仪表盘')
@@ -89,11 +90,17 @@ const userInitial = computed(() => (userStore.userInfo?.username || 'A').charAt(
 onMounted(() => {
   if (!userStore.userInfo) userStore.fetchUserInfo().catch(() => {})
   if (!menuStore.loaded) menuStore.loadMenus().catch(() => {})
+  notificationStore.startPolling()
+})
+
+onBeforeUnmount(() => {
+  notificationStore.stopPolling()
 })
 
 function handleCommand(cmd: string) {
   if (cmd === 'profile') router.push('/profile')
   if (cmd === 'logout') {
+    notificationStore.reset()
     menuStore.reset()
     userStore.logout().then(() => router.push('/login'))
   }
