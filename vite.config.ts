@@ -34,7 +34,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:18080',
+        // 绞杀者切流：经网关统一入口（18000）路由至各微服务；回退单体直连改 18080 即可
+        target: 'http://localhost:18000',
         changeOrigin: true,
       },
     },

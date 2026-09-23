@@ -13,6 +13,8 @@ const service: AxiosInstance = axios.create({
 // 多个请求同时 40102 时，只触发一次 refresh，其余请求排队等新 token 后重试
 let isRefreshing = false
 let pendingQueue: Array<(token: string) => void> = []
+// 记录已因 40102/401 重试过的请求对象，防止重试仍失败时无限刷新死循环
+const retriedRequests = new WeakSet<object>()
 
 /** 调用后端刷新令牌，成功后更新本地存储并返回新 accessToken */
 function doRefresh(): Promise<string> {
@@ -40,6 +42,45 @@ function handleRefreshFail() {
   clearTokens()
   const errorStore = useErrorStore()
   errorStore.showError('登录已过期，请重新登录')
+  router.push('/login')
+}
+
+/** 触发一次令牌刷新：并发下仅首个失效请求真正发起 refresh，其余排入 pendingQueue 等新 token */
+function triggerRefresh() {
+  if (isRefreshing) {
+    return
+  }
+  isRefreshing = true
+  doRefresh()
+    .then((newToken) => {
+      // 刷新成功：唤醒所有排队请求，用新 token 重试
+      pendingQueue.forEach((cb) => cb(newToken))
+      pendingQueue = []
+    })
+    .catch(() => {
+      // 刷新失败（refreshToken 也过期等）：兜底跳登录
+      handleRefreshFail()
+    })
+    .finally(() => {
+      isRefreshing = false
+    })
+}
+
+/** 挂起当前请求，等 refresh 完成后用新 token 重试原请求 */
+function retryAfterRefresh(config: AxiosRequestConfig): Promise<any> {
+  return new Promise((resolve) => {
+    pendingQueue.push((newToken) => {
+      config.headers = config.headers || {}
+      config.headers.Authorization = `Bearer ${newToken}`
+      resolve(service.request(config))
+    })
+  })
+}
+
+/** 未登录/令牌无效兜底：清空令牌、提示并跳转登录 */
+function redirectToLogin(message: string) {
+  clearTokens()
+  useErrorStore().showError(message)
   router.push('/login')
 }
 
@@ -75,9 +116,7 @@ service.interceptors.response.use(
       // 40101 未登录 → 直接跳登录页
       if (res.code === 40101) {
         loadingStore.done()
-        clearTokens()
-        errorStore.showError(res.message || '请先登录')
-        router.push('/login')
+        redirectToLogin(res.message || '请先登录')
         return Promise.reject(new Error(res.message || '未登录'))
       }
 
@@ -85,30 +124,14 @@ service.interceptors.response.use(
       if (res.code === 40102) {
         loadingStore.done() // 当前请求已响应，重试请求会重新 start
         const config = response.config as AxiosRequestConfig
-        if (!isRefreshing) {
-          isRefreshing = true
-          doRefresh()
-            .then((newToken) => {
-              // 刷新成功：唤醒所有排队请求，用新 token 重试
-              pendingQueue.forEach((cb) => cb(newToken))
-              pendingQueue = []
-            })
-            .catch(() => {
-              // 刷新失败（refreshToken 也过期等）：兜底跳登录
-              handleRefreshFail()
-            })
-            .finally(() => {
-              isRefreshing = false
-            })
+        // 已重试过仍判定过期：不再刷新，直接跳登录，避免无限刷新死循环
+        if (retriedRequests.has(config)) {
+          redirectToLogin('登录已过期，请重新登录')
+          return Promise.reject(new Error(res.message || '登录已过期'))
         }
-        // 当前请求挂起，等 refresh 完成后用新 token 重试
-        return new Promise((resolve) => {
-          pendingQueue.push((newToken) => {
-            config.headers = config.headers || {}
-            config.headers.Authorization = `Bearer ${newToken}`
-            resolve(service.request(config))
-          })
-        })
+        retriedRequests.add(config)
+        triggerRefresh()
+        return retryAfterRefresh(config)
       }
 
       // 其他业务错误：顶部 banner 提示
@@ -122,6 +145,26 @@ service.interceptors.response.use(
   (error) => {
     useLoadingStore().done()
     const errorStore = useErrorStore()
+    const resp = error.response
+    // 网关 JwtAuthGlobalFilter 以真实 HTTP 401 返回统一 Result 体（code 40101/40102），
+    // 不再走后端 HTTP200 包装口径，故此处按状态码识别并复用刷新/跳登录逻辑
+    if (resp?.status === 401) {
+      const code = (resp.data as { code?: number } | undefined)?.code
+      const message = (resp.data as { message?: string } | undefined)?.message
+      if (code === 40102 && error.config) {
+        const config = error.config as AxiosRequestConfig
+        if (retriedRequests.has(config)) {
+          redirectToLogin(message || '登录已过期，请重新登录')
+          return Promise.reject(error)
+        }
+        retriedRequests.add(config)
+        triggerRefresh()
+        return retryAfterRefresh(config)
+      }
+      // 40101 或无业务码：视为未登录/令牌无效，清空令牌跳登录
+      redirectToLogin(message || '登录已过期，请重新登录')
+      return Promise.reject(error)
+    }
     errorStore.showError(error.message || '网络异常，请稍后重试')
     return Promise.reject(error)
   },

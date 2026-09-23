@@ -61,6 +61,24 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/template/index.vue'),
         meta: { title: '模板管理', icon: 'Document' },
       },
+      {
+        path: 'work-order/my',
+        name: 'MyWorkOrder',
+        component: () => import('@/views/work-order/my.vue'),
+        meta: { title: '我的工单', icon: 'Tickets' },
+      },
+      {
+        path: 'work-order/create',
+        name: 'CreateWorkOrder',
+        component: () => import('@/views/work-order/create.vue'),
+        meta: { title: '提交工单', icon: 'EditPen', hidden: true },
+      },
+      {
+        path: 'system/work-order',
+        name: 'WorkOrderManage',
+        component: () => import('@/views/work-order/manage.vue'),
+        meta: { title: '工单管理', icon: 'Tickets' },
+      },
     ],
   },
 ]
