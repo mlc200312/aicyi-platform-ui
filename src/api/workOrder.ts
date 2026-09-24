@@ -44,7 +44,7 @@ export function getWorkOrderDetail(id: string | number) {
 
 /** 工单回复记录 */
 export function getWorkOrderReplies(id: string | number) {
-  return request({ url: `/api/work-order/${id}/replies`, method: 'get' })
+  return request({ url: `/api/work-order/replies/${id}`, method: 'get' })
 }
 
 // ======================== 管理端 ========================
@@ -64,10 +64,10 @@ export function adminGetWorkOrderDetail(id: string | number) {
 
 /** 处理工单 */
 export function processWorkOrder(id: string | number, data: { result: number; opinion: string }) {
-  return request({ url: `/api/system/work-order/${id}/process`, method: 'post', data })
+  return request({ url: `/api/system/work-order/process/${id}`, method: 'post', data })
 }
 
 /** 回复工单 */
 export function replyWorkOrder(id: string | number, data: { content: string }) {
-  return request({ url: `/api/system/work-order/${id}/reply`, method: 'post', data })
+  return request({ url: `/api/system/work-order/reply/${id}`, method: 'post', data })
 }
