@@ -25,7 +25,7 @@ export interface MessageQueryParams {
 /** 站内消息分页查询（当前登录用户） */
 export function listMessages(params: MessageQueryParams) {
   return request<{ list: MessageItem[]; total: number; page: number; size: number }>({
-    url: '/api/system/message/list',
+    url: '/api/message/list',
     method: 'get',
     params,
   })
@@ -33,15 +33,15 @@ export function listMessages(params: MessageQueryParams) {
 
 /** 未读消息数量（导航栏铃铛徽标数据源） */
 export function getUnreadCount() {
-  return request<number>({ url: '/api/system/message/unread-count', method: 'get' })
+  return request<number>({ url: '/api/message/unread-count', method: 'get' })
 }
 
 /** 标记单条消息已读（幂等） */
 export function markMessageRead(id: string | number) {
-  return request<null>({ url: `/api/system/message/read/${id}`, method: 'put' })
+  return request<null>({ url: `/api/message/read/${id}`, method: 'put' })
 }
 
 /** 全部未读消息标记已读（幂等） */
 export function markAllMessagesRead() {
-  return request<null>({ url: '/api/system/message/read-all', method: 'put' })
+  return request<null>({ url: '/api/message/read-all', method: 'put' })
 }
