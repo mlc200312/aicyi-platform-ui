@@ -256,6 +256,7 @@ const form = reactive({
   content: '',
   remark: '',
   enabled: 1,
+  version: undefined as number | undefined,
 })
 
 const rules: FormRules = {
@@ -291,7 +292,7 @@ function removeVariable(index: number) {
 
 function openAdd() {
   isEdit.value = false
-  Object.assign(form, { id: '', templateCode: '', templateName: '', messageType: '', format: '', engineType: '', subject: '', signature: '', variables: [], content: '', remark: '', enabled: 1 })
+  Object.assign(form, { id: '', templateCode: '', templateName: '', messageType: '', format: '', engineType: '', subject: '', signature: '', variables: [], content: '', remark: '', enabled: 1, version: undefined })
   dialogVisible.value = true
 }
 
@@ -303,6 +304,7 @@ function openEdit(row: any) {
     subject: row.subject || '', signature: row.signature || '',
     variables: [...(row.variables || [])], content: row.content,
     remark: row.remark || '', enabled: row.enabled,
+    version: row.version,
   })
   dialogVisible.value = true
 }
@@ -327,6 +329,7 @@ async function handleSubmit() {
 
       if (isEdit.value) {
         payload.enabled = form.enabled
+        payload.version = form.version
         await editMessageTemplate(form.id, payload)
       } else {
         payload.templateCode = form.templateCode

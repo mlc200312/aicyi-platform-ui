@@ -5,9 +5,9 @@ export function listMessageTemplates(params: { page: number; size: number; [key:
   return request({ url: '/api/message/template/list', method: 'get', params })
 }
 
-/** 消息模板详情 */
+/** 消息模板详情（detail 前缀双段路由：与单段写端点隔离，避免网关权限合并弱化校验） */
 export function getMessageTemplate(id: number | string) {
-  return request({ url: `/api/message/template/${id}`, method: 'get' })
+  return request({ url: `/api/message/template/detail/${id}`, method: 'get' })
 }
 
 /** 新增消息模板 */
