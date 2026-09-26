@@ -56,7 +56,7 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '日志管理', icon: 'Document' },
       },
       {
-        path: 'template',
+        path: 'message/template',
         name: 'Template',
         component: () => import('@/views/template/index.vue'),
         meta: { title: '模板管理', icon: 'Document' },
@@ -79,7 +79,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/work-order/manage.vue'),
         meta: { title: '工单管理', icon: 'Tickets' },
       },
+      {
+        // 兼容直达入口：/work-order/manager 重定向到规范路由 /system/work-order
+        path: 'work-order/manager',
+        redirect: '/system/work-order',
+        meta: { hidden: true },
+      },
     ],
+  },
+  // 兜底路由：未匹配路径统一回仪表盘，避免白屏
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/dashboard',
   },
 ]
 

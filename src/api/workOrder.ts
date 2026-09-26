@@ -54,20 +54,20 @@ export function adminWorkOrderPage(params: {
   page: number; size: number; status?: number | null
   type?: number | null; priority?: number | null; keyword?: string
 }) {
-  return request({ url: '/api/system/work-order/page', method: 'get', params })
+  return request({ url: '/api/work-order/manager/page', method: 'get', params })
 }
 
 /** 管理端工单详情 */
 export function adminGetWorkOrderDetail(id: string | number) {
-  return request({ url: `/api/system/work-order/${id}`, method: 'get' })
+  return request({ url: `/api/work-order/manager/${id}`, method: 'get' })
 }
 
 /** 处理工单 */
 export function processWorkOrder(id: string | number, data: { result: number; opinion: string }) {
-  return request({ url: `/api/system/work-order/process/${id}`, method: 'post', data })
+  return request({ url: `/api/work-order/manager/process/${id}`, method: 'post', data })
 }
 
 /** 回复工单 */
 export function replyWorkOrder(id: string | number, data: { content: string }) {
-  return request({ url: `/api/system/work-order/reply/${id}`, method: 'post', data })
+  return request({ url: `/api/work-order/manager/reply/${id}`, method: 'post', data })
 }

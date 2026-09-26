@@ -15,7 +15,7 @@ const CORE_PAGES: Array<{ path: string; name: string }> = [
   { path: '/system/role', name: '角色管理' },
   { path: '/system/menu', name: '菜单管理' },
   { path: '/log', name: '操作日志' },
-  { path: '/system/work-order', name: '工单管理' },
+  { path: '/work-order/manager', name: '工单管理' },
   { path: '/template', name: '消息模板' },
 ]
 
